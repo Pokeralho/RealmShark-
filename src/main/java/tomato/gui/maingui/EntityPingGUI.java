@@ -11,7 +11,7 @@ public class EntityPingGUI extends CustomListGUI {
     }
 
     public void open() {
-        Sound.custom.play();
+        Sound.entity.play();
         super.open();
     }
 

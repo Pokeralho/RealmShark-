@@ -90,26 +90,28 @@ public class CharacterStatMaxingGUI extends JPanel {
     public void updateMaxingPanel() {
         if (data.chars == null) return;
 
-        maxingPanel.removeAll();
+        SwingUtilities.invokeLater(() -> {
+            maxingPanel.removeAll();
 
-        maxingPanel.add(Box.createVerticalGlue());
-        for (RealmCharacter c : data.chars) {
-            if (
-                (c.seasonal && seasonalRadio.isSelected()) ||
-                (!c.seasonal && regularRadio.isSelected())
-            ) {
-                int maxedStats = statsMaxed(c);
-                if (maxedStats != 8) {
-                    JPanel boxChars = createPanelCharWithMissingStats(
-                        c,
-                        maxedStats
-                    );
-                    maxingPanel.add(boxChars);
+            maxingPanel.add(Box.createVerticalGlue());
+            for (RealmCharacter c : data.chars) {
+                if (
+                    (c.seasonal && seasonalRadio.isSelected()) ||
+                    (!c.seasonal && regularRadio.isSelected())
+                ) {
+                    int maxedStats = statsMaxed(c);
+                    if (maxedStats != 8) {
+                        JPanel boxChars = createPanelCharWithMissingStats(
+                            c,
+                            maxedStats
+                        );
+                        maxingPanel.add(boxChars);
+                    }
                 }
             }
-        }
 
-        maxingPanel.revalidate();
+            maxingPanel.revalidate();
+        });
     }
 
     /**
@@ -280,38 +282,40 @@ public class CharacterStatMaxingGUI extends JPanel {
      * Updates the stat maxing tab top display with missing pots.
      */
     private void updateMissingPotsPanel() {
-        int[] totalPots = new int[8];
-        boolean seasonalSelected = seasonalRadio.isSelected();
-        VaultData vaultData = seasonalSelected
-            ? data.seasonalVault
-            : data.regularVault;
-        if (vaultData != null) {
-            if (charInvs.isSelected()) {
-                vaultData.getPlayerInvPots(totalPots);
-            }
-            if (mainVault.isSelected()) {
-                vaultData.getVaultChestPots(totalPots);
-            }
-            if (potStorage.isSelected()) {
-                vaultData.getPotStoragePots(totalPots);
-            }
-            if (giftChest.isSelected()) {
-                vaultData.getGiftChestPots(totalPots);
-            }
-        }
-        if (data.chars != null) {
-            for (RealmCharacter c : data.chars) {
-                if (c.seasonal == seasonalSelected && charSelected(c)) {
-                    int[] missing = new int[8];
-                    statMissing(c, missing);
-                    Arrays.setAll(totalPots, i -> totalPots[i] - missing[i]);
+        SwingUtilities.invokeLater(() -> {
+            int[] totalPots = new int[8];
+            boolean seasonalSelected = seasonalRadio.isSelected();
+            VaultData vaultData = seasonalSelected
+                ? data.seasonalVault
+                : data.regularVault;
+            if (vaultData != null) {
+                if (charInvs.isSelected()) {
+                    vaultData.getPlayerInvPots(totalPots);
+                }
+                if (mainVault.isSelected()) {
+                    vaultData.getVaultChestPots(totalPots);
+                }
+                if (potStorage.isSelected()) {
+                    vaultData.getPotStoragePots(totalPots);
+                }
+                if (giftChest.isSelected()) {
+                    vaultData.getGiftChestPots(totalPots);
                 }
             }
-        }
-        for (int i = 0; i < 8; i++) {
-            int pots = totalPots[i];
-            potStatLabels[i].setText("" + pots);
-        }
+            if (data.chars != null) {
+                for (RealmCharacter c : data.chars) {
+                    if (c.seasonal == seasonalSelected && charSelected(c)) {
+                        int[] missing = new int[8];
+                        statMissing(c, missing);
+                        Arrays.setAll(totalPots, i -> totalPots[i] - missing[i]);
+                    }
+                }
+            }
+            for (int i = 0; i < 8; i++) {
+                int pots = totalPots[i];
+                potStatLabels[i].setText("" + pots);
+            }
+        });
     }
 
     /**

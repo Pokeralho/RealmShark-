@@ -22,7 +22,7 @@ import java.awt.event.ActionListener;
  * Menu bar builder class
  */
 public class TomatoMenuBar implements ActionListener {
-    private JMenuItem about, borders, clearChat, bandwidth, javav, clearDpsLogs, theme, fontMenu, dpsOptions, chat, sound, chatPingMessage, entityIdPingMessage, itemPingMessage, enchantPingMessage;
+    private JMenuItem about, borders, clearChat, bandwidth, javav, clearDpsLogs, theme, fontMenu, dpsOptions, chat, sound, chatPingMessage, entityIdPingMessage, dungeonDropPingMessage, dungeonModifierPingMessage, itemPingMessage, enchantPingMessage, soundCustomization;
     private JRadioButtonMenuItem fontSize8, fontSize12, fontSize16, fontSize24, fontSize48, fontSizeCustom;
     private JRadioButtonMenuItem themeDarcula, themeighContrastDark, themeHighContrastLight, themeIntelliJ, themeSolarizedDark, themeSolarizedLight;
     private JRadioButtonMenuItem fontNameMonospaced, fontNameDialog, fontNameDialogInput, fontNameSerif, fontNameSansSerif, fontNameSegoe;
@@ -113,18 +113,30 @@ public class TomatoMenuBar implements ActionListener {
         entityIdPingMessage = new JMenuItem("Entity ID Pings");
         entityIdPingMessage.addActionListener(this);
 
+        dungeonDropPingMessage = new JMenuItem("Dungeon Drop Pings");
+        dungeonDropPingMessage.addActionListener(this);
+
+        dungeonModifierPingMessage = new JMenuItem("Dungeon Modifier Pings");
+        dungeonModifierPingMessage.addActionListener(this);
+
         itemPingMessage = new JMenuItem("Item Drop Pings");
         itemPingMessage.addActionListener(this);
 
         enchantPingMessage = new JMenuItem("Enchant Pings");
         enchantPingMessage.addActionListener(this);
 
+        soundCustomization = new JMenuItem("Custom Sound Files");
+        soundCustomization.addActionListener(this);
+
         sound.add(new JLabel("Volume:"));
         sound.add(soundSlider);
         sound.add(new JSeparator(SwingConstants.HORIZONTAL));
         sound.add(entityIdPingMessage);
+        sound.add(dungeonDropPingMessage);
+        sound.add(dungeonModifierPingMessage);
         sound.add(itemPingMessage);
         sound.add(enchantPingMessage);
+        sound.add(soundCustomization);
         sound.add(new JSeparator(SwingConstants.HORIZONTAL));
         sound.add(chatPing);
         sound.add(chatPingParty);
@@ -742,10 +754,16 @@ public class TomatoMenuBar implements ActionListener {
             TomatoGUI.openChatPingMessage();
         } else if (e.getSource() == entityIdPingMessage) { // entity id ping message
             TomatoGUI.openEntityIdPing();
+        } else if (e.getSource() == dungeonDropPingMessage) {
+            TomatoGUI.openDungeonDropPing();
+        } else if (e.getSource() == dungeonModifierPingMessage) {
+            TomatoGUI.openDungeonModifierPing();
         } else if (e.getSource() == itemPingMessage) { // entity id ping message
             TomatoGUI.openItemPing();
         } else if (e.getSource() == enchantPingMessage) { // enchant ping message
             TomatoGUI.openEnchantPing();
+        } else if (e.getSource() == soundCustomization) { // sound customization
+            TomatoGUI.openSoundCustomization();
         } else if (e.getSource() == saveChat) { // chat save logs
             boolean b = saveChat.isSelected();
             PropertiesManager.setProperties("saveChat", b ? "true" : "false");

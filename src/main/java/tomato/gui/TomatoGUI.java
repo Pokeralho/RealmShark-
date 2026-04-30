@@ -64,7 +64,7 @@ public class TomatoGUI {
 
         tabbedPane.addTab("Key-pops", new KeypopGUI());
 
-        securityPanel = new SecurityGUI();
+        securityPanel = new SecurityGUI(data);
         tabbedPane.addTab("Security", securityPanel);
 
         characterPanel = new CharacterPanelGUI(data);
@@ -249,7 +249,7 @@ public class TomatoGUI {
      * @param q Quest data received when visiting quest room.
      */
     public static void updateQuests(QuestData[] q) {
-        questPanel.update(q);
+        SwingUtilities.invokeLater(() -> questPanel.update(q));
     }
 
     /**
@@ -258,9 +258,11 @@ public class TomatoGUI {
      * @param running Set the label to running or off.
      */
     public static void setStateOfSniffer(boolean running) {
-        statusLabel.setText(
-            " Network Monitor: " + (running ? "RUNNING" : "OFF")
-        );
+        SwingUtilities.invokeLater(() -> {
+            statusLabel.setText(
+                " Network Monitor: " + (running ? "RUNNING" : "OFF")
+            );
+        });
     }
 
     /**
@@ -287,6 +289,20 @@ public class TomatoGUI {
     }
 
     /**
+     * Opens dungeon drop ping window.
+     */
+    public static void openDungeonDropPing() {
+        new tomato.gui.security.DungeonDropPingGUI(data).open();
+    }
+
+    /**
+     * Opens dungeon modifier ping window.
+     */
+    public static void openDungeonModifierPing() {
+        new tomato.gui.security.DungeonModPingGUI(data).open();
+    }
+
+    /**
      * Opens entity ID ping window.
      */
     public static void openItemPing() {
@@ -298,5 +314,12 @@ public class TomatoGUI {
      */
     public static void openEnchantPing() {
         EnchantPingGUI.open();
+    }
+
+    /**
+     * Opens sound customization window.
+     */
+    public static void openSoundCustomization() {
+        new SoundGUI().open();
     }
 }

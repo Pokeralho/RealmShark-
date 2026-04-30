@@ -339,7 +339,7 @@ public class EnchantPingGUI extends JPanel {
      * Call EnchantPingGUI.open() from other code to show the dialog.
      */
     public static void open() {
-        Sound.custom.play();
+        Sound.enchantment.play();
         open(java.util.Collections.emptyList());
     }
 
@@ -349,7 +349,7 @@ public class EnchantPingGUI extends JPanel {
      * @param items list of strings to populate checkboxes (ignored currently, ParseEnchants used)
      */
     public static void open(List<String> items) {
-        Sound.custom.play();
+        Sound.enchantment.play();
         JFrame parent = tomato.gui.TomatoGUI.getFrame();
         EnchantPingGUI panel = new EnchantPingGUI(items);
         JDialog dialog = new JDialog(parent, "Enchant Pings", true);

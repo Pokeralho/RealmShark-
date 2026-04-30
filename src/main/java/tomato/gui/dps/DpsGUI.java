@@ -153,7 +153,7 @@ public class DpsGUI extends JPanel {
 
     public static void updateNewTickPacket(TomatoData data) {
         if (!INSTANCE.liveUpdates) return;
-        INSTANCE.renderData(data.map, data.getEntityHitList(), data.getDeathNotifications(), data.dungeonTime(), true);
+        SwingUtilities.invokeLater(() -> INSTANCE.renderData(data.map, data.getEntityHitList(), data.getDeathNotifications(), data.dungeonTime(), true));
     }
 
     private void renderData(MapInfoPacket map, Entity[] entityHitList, ArrayList<NotificationPacket> notifications, long totalDungeonPcTime, boolean b) {

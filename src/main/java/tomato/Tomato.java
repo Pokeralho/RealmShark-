@@ -309,5 +309,6 @@ public class Tomato {
         data.loadPropList("chatPingMessages");
         data.loadPropList("entityIdPings");
         data.loadPropList("itemPings");
+        data.loadPropList("dungeonModPings");
     }
 }

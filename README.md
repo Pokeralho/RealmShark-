@@ -10,6 +10,10 @@ As of now the sniffer cannot filter packets from multiple instances of the game 
 The sniffer crashes if it cannot distinguish the packets from different instances at the network layer.  
 In the future, OS specific functionality will be added to support multiple instances of clients.
 
+## Tomato v1.9.3 notes
+
+This fork includes Tomato-focused fixes for real-time capture/UI refresh, local-player DPS accounting, loot drop snapshotting, and configurable dungeon drop/modifier alerts. See [CHANGELOG.md](CHANGELOG.md) for the full v1.9.3 change list and validation notes.
+
 #### Credits:
 
 - Most backed code was written by [Cortex](https://github.com/MCRcortex). Huge thanks to him.

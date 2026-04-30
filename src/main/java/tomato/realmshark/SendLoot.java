@@ -158,19 +158,19 @@ public class SendLoot {
             bagId = bag.objectType;
 
             String[] enchants = null;
-            StatData udata = bag.stat.get(StatType.UNIQUE_DATA_STRING);
-            if (udata != null && udata.stringStatValue != null) {
-                enchants = udata.stringStatValue.split(",");
+            String uniqueData = bag.getLootUniqueData();
+            if (uniqueData != null) {
+                enchants = uniqueData.split(",");
             }
 
             for (int i = 0; i < 8; i++) {
-                StatData sd = bag.stat.get(StatType.INVENTORY_0_STAT.get() + i);
+                int itemId = bag.getLootItem(i);
 
-                if (sd == null || sd.statValue < 1) continue;
+                if (itemId < 1) continue;
 
                 JsonObject item = new JsonObject();
 
-                item.addProperty("id", sd.statValue);
+                item.addProperty("id", itemId);
 
                 int sl = 0;
 
@@ -185,10 +185,6 @@ public class SendLoot {
                     if (!enchantText.isEmpty()) {
                         sl = Math.min(4, enchantText.split("\n").length);
 
-                        // Check for enchant pings
-                        if (data.isEnchantPing(enchantText)) {
-                            Sound.custom.play();
-                        }
                     }
                 }
 
@@ -203,7 +199,7 @@ public class SendLoot {
         if (player != null) {
             exaltBonus = RealmCharacter.exaltLootBonus(player.objectType);
 
-            lootDrop = player.lootDropTime(time) > 0;
+            lootDrop = player.lootDropTime(bag.getLootSnapshotTime(time)) > 0;
 
             cruc = player.isCrucible() ? 1 : 0;
 

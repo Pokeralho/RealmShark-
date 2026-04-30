@@ -10,7 +10,7 @@ public class ItemPingGUI extends CustomListGUI {
     }
 
     public void open() {
-        Sound.custom.play();
+        Sound.item.play();
         super.open();
     }
 

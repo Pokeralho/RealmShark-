@@ -29,6 +29,7 @@ public class TomatoPacketCapture implements Controller {
      * @param packet incoming packets to be processed.
      */
     public void packetCapture(Packet packet) {
+        // System.out.println("Packet: " + packet.getClass().getSimpleName());
         if (packet instanceof MovePacket) {
             MovePacket p = (MovePacket) packet;
             data.updatePlayersPos(p);
@@ -99,6 +100,7 @@ public class TomatoPacketCapture implements Controller {
             FameTablePanel.handleMapChange(p.displayName);
         } else if (packet instanceof CreateSuccessPacket) {
             CreateSuccessPacket p = (CreateSuccessPacket) packet;
+            System.out.println("CREATE_SUCCESS: charId=" + p.charId);
             data.setUserId(p.objectId, p.charId, p.str);
             data.logPacket(packet);
             data.webRequest();
@@ -116,6 +118,7 @@ public class TomatoPacketCapture implements Controller {
             data.updateToken(p.accessToken);
         } else if (packet instanceof QuestFetchResponsePacket) {
             QuestFetchResponsePacket p = (QuestFetchResponsePacket) packet;
+            System.out.println("QUEST_FETCH_RESPONSE: quests=" + (p.quests != null ? p.quests.length : 0));
             Stream<QuestData> list = Arrays.stream(p.quests).sorted(
                 Comparator.comparing(questData -> questData.category)
             );

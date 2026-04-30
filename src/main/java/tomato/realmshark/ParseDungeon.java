@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
@@ -136,6 +137,18 @@ public class ParseDungeon {
     public static int getPortalId(String name) {
         Integer id = NAME_TO_ID_PORTAL.get(name);
         return id != null ? id : -1;
+    }
+
+    public static boolean isPortalId(int id) {
+        return NAME_TO_ID_PORTAL.containsValue(id);
+    }
+
+    public static TreeMap<String, Integer> getPortalIdsByName() {
+        return new TreeMap<>(NAME_TO_ID_PORTAL);
+    }
+
+    public static TreeMap<String, Integer> getModifierIdsByName() {
+        return new TreeMap<>(NAME_TO_ID_MODS);
     }
 
     private static class DungeonModifier {

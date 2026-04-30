@@ -67,6 +67,10 @@ public class Entity implements Serializable {
     private static final int FORGOTTEN_KING_REFLECTOR_ANIMATION = -123818367;
     private long lootDropTime;
     private long lootTierTime;
+    private static final int LOOT_SNAPSHOT_SLOT_COUNT = 8;
+    private int[] lootSnapshotItems;
+    private String lootSnapshotUniqueData;
+    private long lootSnapshotTime = -1;
 
     public Entity(TomatoData tomatoData, int id, long time) {
         this.tomatoData = tomatoData;
@@ -135,6 +139,40 @@ public class Entity implements Serializable {
                 }
             }
         }
+    }
+
+    public void captureLootSnapshot(long timePC) {
+        if (lootSnapshotItems != null) return;
+
+        lootSnapshotItems = new int[LOOT_SNAPSHOT_SLOT_COUNT];
+        for (int i = 0; i < LOOT_SNAPSHOT_SLOT_COUNT; i++) {
+            StatData sd = stat.get(StatType.INVENTORY_0_STAT.get() + i);
+            lootSnapshotItems[i] = sd == null ? -1 : sd.statValue;
+        }
+
+        StatData uniqueData = stat.get(StatType.UNIQUE_DATA_STRING);
+        lootSnapshotUniqueData =
+            uniqueData == null ? null : uniqueData.stringStatValue;
+        lootSnapshotTime = timePC;
+    }
+
+    public int getLootItem(int slot) {
+        if (slot < 0 || slot >= LOOT_SNAPSHOT_SLOT_COUNT) return -1;
+        if (lootSnapshotItems != null) return lootSnapshotItems[slot];
+
+        StatData sd = stat.get(StatType.INVENTORY_0_STAT.get() + slot);
+        return sd == null ? -1 : sd.statValue;
+    }
+
+    public String getLootUniqueData() {
+        if (lootSnapshotItems != null) return lootSnapshotUniqueData;
+
+        StatData uniqueData = stat.get(StatType.UNIQUE_DATA_STRING);
+        return uniqueData == null ? null : uniqueData.stringStatValue;
+    }
+
+    public long getLootSnapshotTime(long fallbackTime) {
+        return lootSnapshotTime >= 0 ? lootSnapshotTime : fallbackTime;
     }
 
     public int maxHp() {

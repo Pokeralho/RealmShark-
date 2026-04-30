@@ -72,15 +72,17 @@ public class LootGUI extends JPanel {
         Entity player,
         long time
     ) {
-        INSTANCE.updateGui(map, bag, dropper, player, time);
+        SwingUtilities.invokeLater(() -> INSTANCE.updateGui(map, bag, dropper, player, time));
     }
 
     public static void updateExaltStats() {
         update = true;
         if (!cleared) {
             cleared = true;
-            lootPanel.removeAll();
-            INSTANCE.safeRefreshPanel();
+            SwingUtilities.invokeLater(() -> {
+                lootPanel.removeAll();
+                INSTANCE.safeRefreshPanel();
+            });
         }
     }
 
@@ -239,7 +241,7 @@ public class LootGUI extends JPanel {
         long lootTime = 0;
         if (player != null) {
             exaltBonus = RealmCharacter.exaltLootBonus(player.objectType);
-            lootTime = player.lootDropTime(time);
+            lootTime = player.lootDropTime(bag.getLootSnapshotTime(time));
         }
 
         mainPanel.add(Box.createHorizontalGlue());
@@ -395,20 +397,19 @@ public class LootGUI extends JPanel {
         panel.setLayout(new GridLayout(1, 8));
 
         String[] enchants = null;
-        StatData udata = entity.stat.get(StatType.UNIQUE_DATA_STRING);
-        if (udata != null && udata.stringStatValue != null) {
-            enchants = udata.stringStatValue.split(",");
+        String uniqueData = entity.getLootUniqueData();
+        if (uniqueData != null) {
+            enchants = uniqueData.split(",");
         }
 
         for (int i = 0; i < 8; i++) {
-            StatData sd = entity.stat.get(StatType.INVENTORY_0_STAT.get() + i);
-            if (sd == null || sd.statValue < 1) {
+            int statValue = entity.getLootItem(i);
+            if (statValue < 1) {
                 JPanel comp = new JPanel();
                 comp.setMinimumSize(new Dimension(24, 24));
                 panel.add(comp);
                 continue;
             }
-            int statValue = sd.statValue;
             String itemName = IdToAsset.objectName(statValue);
             String enchantText = "";
             int enchantCount = 0;
@@ -418,12 +419,7 @@ public class LootGUI extends JPanel {
                 data.isItemPing(String.valueOf(statValue)) ||
                 data.isItemPing(itemName)
             ) {
-                Sound.custom.play();
-            }
-
-            // Check for enchant pings
-            if (data.isEnchantPing(enchantText)) {
-                Sound.custom.play();
+                Sound.item.play();
             }
 
             if (
@@ -437,6 +433,11 @@ public class LootGUI extends JPanel {
                     String[] enchantNames = enchantText.split("\n");
                     enchantCount = enchantNames.length;
                 }
+            }
+
+            // Check for enchant pings after the snapshot enchant text is parsed.
+            if (data.isEnchantPing(enchantText)) {
+                Sound.enchantment.play();
             }
 
             JLabel icon;

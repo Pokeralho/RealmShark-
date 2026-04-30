@@ -168,17 +168,19 @@ public class CharacterStatsGUI extends JPanel {
     private void update() {
         if (data.chars == null) return;
 
-        int charCount = data.chars.size();
+        SwingUtilities.invokeLater(() -> {
+            int charCount = data.chars.size();
 
-        if (charCount != this.charCount) {
-            updatePanelWithPlayerListChanged();
-            updatePlayerList();
-            validate();
-        } else {
-            updateDungeonLabels();
-            updatePlayerList();
-            revalidate();
-        }
+            if (charCount != this.charCount) {
+                updatePanelWithPlayerListChanged();
+                updatePlayerList();
+                validate();
+            } else {
+                updateDungeonLabels();
+                updatePlayerList();
+                revalidate();
+            }
+        });
     }
 
     /**

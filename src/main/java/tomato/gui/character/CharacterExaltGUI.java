@@ -150,28 +150,30 @@ public class CharacterExaltGUI extends JPanel {
      * Update exalt stats
      */
     private void update() {
-        int[] sum = new int[8];
-        int[] missing = new int[8];
+        SwingUtilities.invokeLater(() -> {
+            int[] sum = new int[8];
+            int[] missing = new int[8];
 
-        for (int i = 0; i < CharacterClass.CHAR_CLASS_LIST.length; i++) {
-            CharacterClass clazz = CharacterClass.CHAR_CLASS_LIST[i];
-            int[] e = RealmCharacter.exalts.get(clazz.getId());
-            if (e == null) continue;
-            for (int j = 0; j < 8; j++) {
-                int v = e[exaltOrder[j]];
-                sum[j] += v;
-                missing[j] += Math.max(75 - v, 0);
-                grid[i][j].setText("" + v);
+            for (int i = 0; i < CharacterClass.CHAR_CLASS_LIST.length; i++) {
+                CharacterClass clazz = CharacterClass.CHAR_CLASS_LIST[i];
+                int[] e = RealmCharacter.exalts.get(clazz.getId());
+                if (e == null) continue;
+                for (int j = 0; j < 8; j++) {
+                    int v = e[exaltOrder[j]];
+                    sum[j] += v;
+                    missing[j] += Math.max(75 - v, 0);
+                    grid[i][j].setText("" + v);
+                }
             }
-        }
 
-        for (int j = 0; j < 8; j++) {
-            grid[charListSize][j].setText("" + sum[j]);
-        }
+            for (int j = 0; j < 8; j++) {
+                grid[charListSize][j].setText("" + sum[j]);
+            }
 
-        for (int j = 0; j < 8; j++) {
-            grid[charListSize + 1][j].setText("" + missing[j]);
-        }
+            for (int j = 0; j < 8; j++) {
+                grid[charListSize + 1][j].setText("" + missing[j]);
+            }
+        });
     }
 
     private JLabel classIcon(int skin, String classString) {

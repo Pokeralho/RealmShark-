@@ -155,15 +155,17 @@ public class CharacterCollectionGUI extends JPanel {
     private void update() {
         if (data.chars == null) return;
 
-        int charCount = data.chars.size();
+        SwingUtilities.invokeLater(() -> {
+            int charCount = data.chars.size();
 
-        if (charCount != this.charCount) {
-            updatePanelWithPlayerListChanged();
-            validate();
-        }
-        updateDungeonLabels();
-        updatePlayerList();
-        revalidate();
+            if (charCount != this.charCount) {
+                updatePanelWithPlayerListChanged();
+                validate();
+            }
+            updateDungeonLabels();
+            updatePlayerList();
+            revalidate();
+        });
     }
 
     /**

@@ -161,20 +161,22 @@ public class CharacterListGUI extends JPanel {
     private void updateCharPanel() {
         if (data.chars == null) return;
 
-        charPanel.setLayout(new BoxLayout(charPanel, BoxLayout.Y_AXIS));
-        charPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
-        charPanel.add(Box.createVerticalGlue());
-        charPanel.removeAll();
-        for (RealmCharacter c : data.chars) {
-            JPanel box = CharacterPanelGUI.createMainBox();
+        SwingUtilities.invokeLater(() -> {
+            charPanel.setLayout(new BoxLayout(charPanel, BoxLayout.Y_AXIS));
+            charPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+            charPanel.add(Box.createVerticalGlue());
+            charPanel.removeAll();
+            for (RealmCharacter c : data.chars) {
+                JPanel box = CharacterPanelGUI.createMainBox();
 
-            box.add(leftColumn(c));
-            box.add(midColumn(c));
-            box.add(invBackpack(c));
+                box.add(leftColumn(c));
+                box.add(midColumn(c));
+                box.add(invBackpack(c));
 
-            charPanel.add(box);
-        }
+                charPanel.add(box);
+            }
 
-        validate();
+            validate();
+        });
     }
 }

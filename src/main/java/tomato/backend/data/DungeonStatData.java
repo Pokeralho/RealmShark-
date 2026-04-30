@@ -55,12 +55,10 @@ public class DungeonStatData {
 //            enchants = udata.stringStatValue.split(",");
 //        }
         for (int i = 0; i < 8; i++) {
-            StatData sd = items.stat.get(StatType.INVENTORY_0_STAT.get() + i);
-            if (sd == null || sd.statValue < 1) continue;
+            int itemId = items.getLootItem(i);
+            if (itemId < 1) continue;
 //            if (enchants != null && i < enchants.length && !enchants[i].isEmpty() && !enchants[i].equals("AAIE_f_9__3__f8=")) {
 //            }
-
-            int itemId = sd.statValue;
 
             info.addItems(entityType, itemId);
         }

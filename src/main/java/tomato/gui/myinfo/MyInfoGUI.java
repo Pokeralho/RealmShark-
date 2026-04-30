@@ -355,7 +355,7 @@ public class MyInfoGUI extends JPanel {
 
     public static void updatePlayer(Entity player) {
         INSTANCE.player = player;
-        INSTANCE.updateMe();
+        SwingUtilities.invokeLater(() -> INSTANCE.updateMe());
     }
 
     private void updateMe() {

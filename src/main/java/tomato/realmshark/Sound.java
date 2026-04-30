@@ -1,6 +1,7 @@
 package tomato.realmshark;
 
 import tomato.gui.keypop.KeypopGUI;
+import util.PropertiesManager;
 
 import javax.sound.sampled.*;
 import java.io.*;
@@ -25,6 +26,12 @@ public class Sound {
     public static Sound bluebag;
     public static Sound custom;
     public static Sound trade;
+    public static Sound enchantment;
+    public static Sound item;
+    public static Sound entity;
+    public static Sound dungeonDrop;
+    public static Sound dungeonModifier;
+    public static Sound dungeon;
 
     public static boolean playPmSound = false;
     public static boolean playPartySound = false;
@@ -37,26 +44,56 @@ public class Sound {
     public static boolean playBlueBagSound = false;
     public static boolean playTradeSound = false;
 
-    public Sound(String file) {
-        soundClip = loadSound(file);
+    private String currentPath;
+
+    public Sound(String defaultPath, String propertyKey) {
+        this.currentPath = PropertiesManager.getProperty(propertyKey);
+        if (this.currentPath == null || !new File(this.currentPath).exists()) {
+            this.currentPath = defaultPath;
+        }
+        soundClip = loadSound(this.currentPath);
+    }
+
+    public void reload(String newPath) {
+        if (soundClip != null && soundClip.isRunning()) {
+            soundClip.stop();
+        }
+        Clip newClip = loadSound(newPath);
+        if (newClip != null) {
+            soundClip = newClip;
+            currentPath = newPath;
+        }
+    }
+
+    public String getPath() {
+        return currentPath;
     }
 
     /**
      * Loads auto clip to be played later
      */
     static {
-        party = new Sound("sound/party.wav");
-        guild = new Sound("sound/guild.wav");
-        pm = new Sound("sound/pm.wav");
-        keypop = new Sound("sound/keypop.wav");
-        whitebag = new Sound("sound/whitebag.wav");
-        orangebag = new Sound("sound/orangebag.wav");
-        redbag = new Sound("sound/redbag.wav");
-        goldbag = new Sound("sound/goldbag.wav");
-        eggbag = new Sound("sound/eggbag.wav");
-		bluebag = new Sound("sound/bluebag.wav");
-        trade = new Sound("sound/trade.wav");
-        custom = new Sound("sound/custom.wav");
+        party = new Sound("sound/party.wav", "partySoundPath");
+        guild = new Sound("sound/guild.wav", "guildSoundPath");
+        pm = new Sound("sound/pm.wav", "pmSoundPath");
+        keypop = new Sound("sound/keypop.wav", "keypopSoundPath");
+        whitebag = new Sound("sound/whitebag.wav", "whiteBagSoundPath");
+        orangebag = new Sound("sound/orangebag.wav", "orangeBagSoundPath");
+        redbag = new Sound("sound/redbag.wav", "redBagSoundPath");
+        goldbag = new Sound("sound/goldbag.wav", "goldBagSoundPath");
+        eggbag = new Sound("sound/eggbag.wav", "eggBagSoundPath");
+        bluebag = new Sound("sound/bluebag.wav", "blueBagSoundPath");
+        trade = new Sound("sound/trade.wav", "tradeSoundPath");
+        enchantment = new Sound("sound/custom.wav", "enchantmentSoundPath");
+        item = new Sound("sound/custom.wav", "itemSoundPath");
+        entity = new Sound("sound/custom.wav", "entitySoundPath");
+        dungeonDrop = new Sound("sound/custom.wav", "dungeonDropSoundPath");
+        dungeonModifier = new Sound(
+            "sound/custom.wav",
+            "dungeonModifierSoundPath"
+        );
+        dungeon = dungeonModifier;
+        custom = new Sound("sound/custom.wav", "customSoundPath");
     }
 
     private static Clip loadSound(String file) {

@@ -20,6 +20,7 @@ import tomato.gui.myinfo.MyInfoGUI;
 import tomato.gui.security.ParsePanelGUI;
 import tomato.gui.stats.LootGUI;
 import tomato.realmshark.HttpCharListRequest;
+import tomato.realmshark.ParseDungeon;
 import tomato.realmshark.RealmCharacter;
 import tomato.realmshark.RealmCharacterStats;
 import tomato.realmshark.Sound;
@@ -86,6 +87,8 @@ public class TomatoData {
     // Track minion/summon to owner mapping for damage attribution
     // Key: minion/summon objectId, Value: owner/player objectId
     private final HashMap<Integer, Integer> minionOwnerMap = new HashMap<>();
+    private final HashMap<String, Long> recentLocalEnemyHits = new HashMap<>();
+    private static final long LOCAL_DAMAGE_PACKET_DEDUP_WINDOW_MS = 1500;
 
     /**
      * Sets the current realm.
@@ -248,12 +251,14 @@ public class TomatoData {
             moonLightFlameCounter(idType);
             SecurityAbilityUseCheck.decoy(entity);
             customSoundAlert(idType);
+            dungeonModifierPing(entity);
         }
         if (petyard) {
             addPet(object);
         } else if (isCrystal(idType)) {
             crystalTracker.add(id);
         } else if (isLootBag(idType) && !lootBags.contains(id)) {
+            entity.captureLootSnapshot(timePc);
             lootBags.add(id);
             lootTickContainer[lootTickToggle].add(entity);
         } else if (isPlayerEntity(idType)) {
@@ -280,8 +285,35 @@ public class TomatoData {
         if (idEntityPing != null) {
             for (String id : idEntityPing) {
                 if (String.valueOf(idType).equals(id)) {
-                    Sound.custom.play();
+                    if (ParseDungeon.isPortalId(idType)) {
+                        Sound.dungeonDrop.play();
+                    } else {
+                        Sound.entity.play();
+                    }
                     break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Plays sound if user wants alerts when a dungeon with specific modifiers shows up.
+     *
+     * @param entity The portal entity
+     */
+    private void dungeonModifierPing(Entity entity) {
+        StatData sd = entity.stat.get(StatType.MODIFIERS_STAT);
+        if (sd == null || sd.stringStatValue == null || sd.stringStatValue.isEmpty()) return;
+
+        ArrayList<String> modPings = getDungeonModPings();
+        if (modPings == null || modPings.isEmpty()) return;
+
+        String[] mods = sd.stringStatValue.split(";");
+        for (String mod : mods) {
+            for (String ping : modPings) {
+                if (mod.equalsIgnoreCase(ping)) {
+                    Sound.dungeonModifier.play();
+                    return;
                 }
             }
         }
@@ -295,7 +327,32 @@ public class TomatoData {
     private void lootTick() {
         lootTickToggle ^= 1;
 
-        if (!lootTickContainer[lootTickToggle].isEmpty()) {
+        processLootBags(lootTickContainer[lootTickToggle]);
+        lootTickContainer[lootTickToggle].clear();
+
+        if (!killedEntitys.isEmpty()) {
+            killedEntitys.clear();
+        }
+    }
+
+    private void flushQueuedLootBags() {
+        ArrayList<Entity> queuedBags = new ArrayList<>();
+        for (ArrayList<Entity> container : lootTickContainer) {
+            if (!container.isEmpty()) {
+                queuedBags.addAll(container);
+                container.clear();
+            }
+        }
+
+        processLootBags(queuedBags);
+
+        if (!killedEntitys.isEmpty()) {
+            killedEntitys.clear();
+        }
+    }
+
+    private void processLootBags(ArrayList<Entity> bags) {
+        if (!bags.isEmpty()) {
             try {
                 // First pass: determine mob associations and collect results (do not send yet)
                 lootAttribution.beginLootTick(map != null ? map.seed : -1);
@@ -341,11 +398,6 @@ public class TomatoData {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            lootTickContainer[lootTickToggle].clear();
-        }
-
-        if (!killedEntitys.isEmpty()) {
-            killedEntitys.clear();
         }
     }
 
@@ -672,6 +724,13 @@ public class TomatoData {
             shooterId = projectile.getSummonerId();
         }
         Entity attacker = playerList.get(shooterId);
+        if (attacker != null && attacker.isUser()) {
+            pruneRecentLocalEnemyHits();
+            recentLocalEnemyHits.put(
+                localHitKey(id, p.bulletId, attacker.id),
+                timePc
+            );
+        }
         target.userProjectileHit(attacker, projectile, timePc);
         if (!entityHitList.containsKey(id)) {
             entityHitList.put(id, target);
@@ -730,6 +789,14 @@ public class TomatoData {
             }
         }
 
+        if (
+            attacker != null &&
+            attacker.isUser() &&
+            isDuplicateLocalDamagePacket(p, attacker.id)
+        ) {
+            return;
+        }
+
         if (p.damageAmount > 0) {
             Projectile projectile = new Projectile(p.damageAmount);
             target.genericDamageHit(attacker, projectile, timePc);
@@ -742,6 +809,28 @@ public class TomatoData {
         }
 
         target.updateDamageTaken(timePc);
+    }
+
+    private boolean isDuplicateLocalDamagePacket(DamagePacket p, int attackerId) {
+        pruneRecentLocalEnemyHits();
+        String key = localHitKey(p.targetId, p.bulletId, attackerId);
+        Long hitTime = recentLocalEnemyHits.get(key);
+        if (hitTime == null) {
+            return false;
+        }
+        return timePc - hitTime <= LOCAL_DAMAGE_PACKET_DEDUP_WINDOW_MS;
+    }
+
+    private void pruneRecentLocalEnemyHits() {
+        recentLocalEnemyHits
+            .entrySet()
+            .removeIf(entry ->
+                timePc - entry.getValue() > LOCAL_DAMAGE_PACKET_DEDUP_WINDOW_MS
+            );
+    }
+
+    private static String localHitKey(int targetId, int bulletId, int attackerId) {
+        return targetId + ":" + bulletId + ":" + attackerId;
     }
 
     /**
@@ -834,6 +923,8 @@ public class TomatoData {
      * Clears all data as instance is changing.
      */
     public void clear() {
+        flushQueuedLootBags();
+
         worldPlayerId = -1;
         charId = -1;
         time = -1;
@@ -863,6 +954,7 @@ public class TomatoData {
         crystalTracker.clear();
         playerListUpdated.clear();
         dropList.clear();
+        recentLocalEnemyHits.clear();
 
         lootBags.clear();
 
@@ -1283,6 +1375,10 @@ public class TomatoData {
         savePropList(list, propName, "§");
     }
 
+    public void savePropList(String propName) {
+        savePropList(propLists.get(propName), propName);
+    }
+
     // --- Moonlight Village Umi / Miko loot & other attribution support ---
     // Umi (20493) and Miko (20451) wander off without death packets.
     // After their concluding dialogue lines we attribute ALL loot bags that appear
@@ -1521,6 +1617,30 @@ public class TomatoData {
                 forcedVariantSuffix = null;
                 nextTickAttributionSeed = -1;
             }
+        }
+    }
+
+    public ArrayList<String> getDungeonModPings() {
+        ArrayList<String> result = propLists.get("dungeonModPings");
+        return result != null ? result : new ArrayList<>();
+    }
+
+    public void addDungeonModPing(String mod) {
+        ArrayList<String> list = propLists.computeIfAbsent(
+            "dungeonModPings",
+            k -> new ArrayList<>()
+        );
+        if (!list.contains(mod)) {
+            list.add(mod);
+            savePropList("dungeonModPings");
+        }
+    }
+
+    public void removeDungeonModPing(String mod) {
+        ArrayList<String> list = propLists.get("dungeonModPings");
+        if (list != null) {
+            list.remove(mod);
+            savePropList("dungeonModPings");
         }
     }
 }

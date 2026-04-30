@@ -129,7 +129,7 @@ public class ChatGUI extends JPanel {
      * @param s The text to be added at the end of text area.
      */
     public static void appendTextAreaChat(String s) {
-        if (textAreaChatAll != null) textAreaChatAll.append(s);
+        if (textAreaChatAll != null) SwingUtilities.invokeLater(() -> textAreaChatAll.append(s));
     }
 
     /**
@@ -211,39 +211,45 @@ public class ChatGUI extends JPanel {
                 }
             }
         }
-        String s = String.format("%s %s[%s]: %s", Util.getHourTime(), a, name, p.text);
-        switch (type) {
-            case 1:
-                if (textAreaChatGuild != null) textAreaChatGuild.append(s + "\n");
-                break;
-            case 2:
-                if (textAreaChatParty != null) textAreaChatParty.append(s + "\n");
-                break;
-            case 3:
-                if (textAreaChatPm != null) textAreaChatPm.append(s + "\n");
-                break;
-        }
-        if (textAreaChatAll != null) textAreaChatAll.append(s + "\n");
+        final String finalA = a;
+        final String finalName = name;
+        final int finalType = type;
 
-        String response = getString(p);
-
-        if (response != null) {
-            String responseFormatted = String.format("%s %s[Umi Response]: %s", Util.getHourTime(), a, response);
-            switch (type) {
+        SwingUtilities.invokeLater(() -> {
+            String s = String.format("%s %s[%s]: %s", Util.getHourTime(), finalA, finalName, p.text);
+            switch (finalType) {
                 case 1:
-                    if (textAreaChatGuild != null) textAreaChatGuild.append(responseFormatted + "\n");
+                    if (textAreaChatGuild != null) textAreaChatGuild.append(s + "\n");
                     break;
                 case 2:
-                    if (textAreaChatParty != null) textAreaChatParty.append(responseFormatted + "\n");
+                    if (textAreaChatParty != null) textAreaChatParty.append(s + "\n");
                     break;
                 case 3:
-                    if (textAreaChatPm != null) textAreaChatPm.append(responseFormatted + "\n");
+                    if (textAreaChatPm != null) textAreaChatPm.append(s + "\n");
                     break;
             }
-            if (textAreaChatAll != null) textAreaChatAll.append(responseFormatted + "\n");
-        }
+            if (textAreaChatAll != null) textAreaChatAll.append(s + "\n");
+
+            String responseFormatted = getString(p);
+            if (responseFormatted != null) {
+                String fullResponse = String.format("%s %s[Umi Response]: %s", Util.getHourTime(), finalA, responseFormatted);
+                switch (finalType) {
+                    case 1:
+                        if (textAreaChatGuild != null) textAreaChatGuild.append(fullResponse + "\n");
+                        break;
+                    case 2:
+                        if (textAreaChatParty != null) textAreaChatParty.append(fullResponse + "\n");
+                        break;
+                    case 3:
+                        if (textAreaChatPm != null) textAreaChatPm.append(fullResponse + "\n");
+                        break;
+                }
+                if (textAreaChatAll != null) textAreaChatAll.append(fullResponse + "\n");
+            }
+        });
 
         if (save) {
+            String s = String.format("%s %s[%s]: %s", Util.getHourTime(), a, name, p.text);
             Util.print("chat/chat", s);
         }
     }
