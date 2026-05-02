@@ -91,9 +91,7 @@ public class CheckVersion {
     }
 
     public static void checkVersion() {
-        if(!isLatestVersion()) {
-            updateMessage();
-        }
+        isLatestVersion();
     }
 
     public static void main(String[] args) {

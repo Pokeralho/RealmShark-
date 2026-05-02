@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.9.4
+
+### Added
+
+- Added automatic ExitLag detection on Windows using a best-effort heuristic (process presence + adapter hints).
+- Added automatic capture adjustments when ExitLag is detected:
+  - Expanded BPF filter from `tcp/2050` to `tcp/2050 or tcp/443`.
+  - Increased interface priority for tunnel/VPN-style adapters (e.g. ExitLag/Wintun/TAP) while keeping loopback/Npcap as top priority.
+- Added unit tests validating ExitLag detection behavior for:
+  - ExitLag inactive
+  - ExitLag active
+  - Other game proxies (should not trigger ExitLag mode)
+
+### Changed
+
+- Sniffer behavior remains unchanged when ExitLag is not detected (default filter stays `tcp/2050`).
+
+### Validation
+
+- `gradle test` passed.
+- `gradle shadowJar` passed.
+
 ## v1.9.3
 
 ### Fixed
@@ -14,6 +36,7 @@
 
 - Added a low-latency `Sniffer` implementation using a `LinkedBlockingQueue` packet pipeline and immediate pcap capture settings.
 - Added multi-interface capture behavior with adapter filtering and prioritization for loopback/Npcap setups, including ExitLag-style tunneling.
+- Added best-effort ExitLag detection on Windows and automatic expansion of the capture filter to include `tcp/443` when ExitLag is active.
 - Added dungeon drop alert configuration in the Security alerts UI.
 - Added dungeon modifier alert configuration in the Security alerts UI.
 - Added separate custom sound selectors for dungeon drop pings and dungeon modifier pings.

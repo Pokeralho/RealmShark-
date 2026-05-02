@@ -27,6 +27,7 @@ import pcap.spi.option.DefaultLiveOptions;
 public class Sniffer {
 
     private static final int REALM_PORT = 2050;
+    private static final int ALT_REALM_PORT = 443;
     private static final int POLL_TIMEOUT_MS = 250;
     private static final int RECENT_TCP_PACKET_LIMIT = 4096;
 
@@ -36,6 +37,7 @@ public class Sniffer {
     private final List<Pcap> activeSniffers;
     private final Set<String> recentTcpPackets;
     private volatile boolean stop;
+    private volatile boolean exitLagActive;
 
     public Sniffer(PProcessor packetProcessor) {
         packetQueue = new LinkedBlockingQueue<>();
@@ -67,7 +69,8 @@ public class Sniffer {
     public void startSniffer() throws Exception {
         Service service = Creator.create("PcapService");
         Interface[] interfaces = NativeBridge.getInterfaces(service);
-        Arrays.sort(interfaces, interfacePriorityComparator());
+        exitLagActive = ExitLagDetector.isExitLagActive(interfaces);
+        Arrays.sort(interfaces, interfacePriorityComparator(exitLagActive));
 
         stop = false;
         packetQueue.clear();
@@ -75,12 +78,12 @@ public class Sniffer {
         activeSniffers.clear();
 
         for (Interface networkInterface : interfaces) {
-            if (shouldSkip(networkInterface)) {
+            if (shouldSkip(networkInterface, exitLagActive)) {
                 continue;
             }
 
             Thread thread = new Thread(
-                () -> startPcap(service, networkInterface),
+                () -> startPcap(service, networkInterface, exitLagActive),
                 "Tomato packet capture - " + interfaceName(networkInterface)
             );
             thread.setDaemon(true);
@@ -97,7 +100,11 @@ public class Sniffer {
         processBufferedPackets();
     }
 
-    private void startPcap(Service service, Interface networkInterface) {
+    private void startPcap(
+        Service service,
+        Interface networkInterface,
+        boolean exitLagActive
+    ) {
         try {
             DefaultLiveOptions options = new DefaultLiveOptions();
             options.timeout(1);
@@ -108,7 +115,7 @@ public class Sniffer {
                 return;
             }
 
-            pcap.setFilter("tcp port " + REALM_PORT, true);
+            pcap.setFilter(captureFilter(exitLagActive), true);
             activeSniffers.add(pcap);
             startPacketSniffer(pcap);
         } catch (Exception ignored) {
@@ -184,7 +191,18 @@ public class Sniffer {
             incoming.streamBuilder(tcpPacket);
         } else if (tcpPacket.getDstPort() == REALM_PORT) {
             outgoing.streamBuilder(tcpPacket);
+        } else if (exitLagActive && tcpPacket.getSrcPort() == ALT_REALM_PORT) {
+            incoming.streamBuilder(tcpPacket);
+        } else if (exitLagActive && tcpPacket.getDstPort() == ALT_REALM_PORT) {
+            outgoing.streamBuilder(tcpPacket);
         }
+    }
+
+    private static String captureFilter(boolean exitLagActive) {
+        if (exitLagActive) {
+            return "tcp port " + REALM_PORT + " or tcp port " + ALT_REALM_PORT;
+        }
+        return "tcp port " + REALM_PORT;
     }
 
     private static boolean computeChecksum(byte[] payload) {
@@ -224,32 +242,63 @@ public class Sniffer {
         }
     }
 
-    private static Comparator<Interface> interfacePriorityComparator() {
+    private static Comparator<Interface> interfacePriorityComparator(
+        boolean exitLagActive
+    ) {
         return (first, second) -> {
-            boolean firstPriority = isPriorityInterface(first);
-            boolean secondPriority = isPriorityInterface(second);
-            if (firstPriority && !secondPriority) {
-                return -1;
-            }
-            if (!firstPriority && secondPriority) {
-                return 1;
-            }
-            return 0;
+            int firstScore = interfacePriorityScore(first, exitLagActive);
+            int secondScore = interfacePriorityScore(second, exitLagActive);
+            return Integer.compare(firstScore, secondScore);
         };
     }
 
-    private static boolean isPriorityInterface(Interface networkInterface) {
+    private static int interfacePriorityScore(
+        Interface networkInterface,
+        boolean exitLagActive
+    ) {
         String description = interfaceDescription(networkInterface);
         String name = interfaceName(networkInterface);
-        return description.contains("loopback") ||
+        if (
+            description.contains("loopback") ||
             name.contains("loopback") ||
-            name.contains("npcap");
+            name.contains("npcap")
+        ) {
+            return 0;
+        }
+        if (
+            exitLagActive &&
+            (description.contains("exitlag") ||
+                name.contains("exitlag") ||
+                description.contains("wintun") ||
+                name.contains("wintun") ||
+                description.contains("tunnel") ||
+                name.contains("tunnel") ||
+                description.contains("tap") ||
+                name.contains("tap") ||
+                description.contains("vpn") ||
+                name.contains("vpn"))
+        ) {
+            return 1;
+        }
+        return 2;
     }
 
-    private static boolean shouldSkip(Interface networkInterface) {
+    private static boolean shouldSkip(
+        Interface networkInterface,
+        boolean exitLagActive
+    ) {
         String description = interfaceDescription(networkInterface);
         String name = interfaceName(networkInterface);
-        return description.contains("wan miniport") || name.contains("wan miniport");
+        if (description.contains("wan miniport") || name.contains("wan miniport")) {
+            if (
+                exitLagActive &&
+                (description.contains("exitlag") || name.contains("exitlag"))
+            ) {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
 
     private static String interfaceDescription(Interface networkInterface) {
